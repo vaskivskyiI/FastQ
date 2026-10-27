@@ -1,0 +1,80 @@
+# Example IOC host file: the 4DMAG PC (all 4DMAG instruments today). On that PC the live file is
+# ioc_host/supervisor_config.yaml (not in git) - start_ioc_host.bat creates it from this example on first start.
+# Addresses, device ids and accounts here are placeholders (public repository); real ones go in the PC's own
+# file or a private examples folder (tools/local_config.py: FASTQ_CONFIG_EXAMPLES).
+# Addresses from 4dmag origin/main config/devices.py (2026-10-26). When instruments move to
+# another PC: move their entries to that PC's file, give that PC its own directory prefix
+# (FDM:DIR:<HOST>:) and list the directories as peers of each other (directory_ioc --peers).
+# Python <= 3.12 on this PC: the Nanotec NanoLib .pyd files have no 3.13 build.
+# Paths: forward slashes (args are split POSIX-style).
+devices:
+  directory_ioc:
+    ioc_script: directory_ioc
+    enabled: true
+    args: '--prefix FDM:DIR:'
+  cammain:      # Spectral Instruments CCD, main spectrometer
+    ioc_script: si_camera_ioc
+    enabled: true
+    args: '--camera-index 1 --jsdk-path "C:/Jireh/JSDK for Python/64 bit/Runtime Files" --data-root D:/Data/FastQ/detectors --prefix FDM:CAMMAIN:'
+  camref:       # Spectral Instruments CCD, reference spectrometer
+    ioc_script: si_camera_ioc
+    enabled: true
+    args: '--camera-index 2 --jsdk-path "C:/Jireh/JSDK for Python/64 bit/Runtime Files" --data-root D:/Data/FastQ/detectors --prefix FDM:CAMREF:'
+  delay:         # Thorlabs APT delay line; t0 = 293.9277 mm, direction -1 (devices.py t0_pos)
+    ioc_script: thorlabs_apt_ioc
+    enabled: true
+    args: '--serial 83000001 --unit ps --t0 293.9277 --direction -1 --apt-path D:/Software/4dmag --prefix FDM:DELAY:'
+  waveplate:     # Thorlabs APT rotation mount, probe waveplate zero at 320 deg
+    ioc_script: thorlabs_apt_ioc
+    enabled: true
+    args: '--serial 27000002 --unit deg --offset 320 --apt-path D:/Software/4dmag --prefix FDM:WAVEPLATE:'
+  pump:          # Arduino beam shutter + camera trigger
+    ioc_script: arduino_shutter_ioc
+    enabled: true
+    args: '--port COM21 --baud 57600 --prefix FDM:PUMP:'
+  rotator:       # Nanotec (detector rotation)
+    ioc_script: nanotec_ioc
+    enabled: true
+    args: '--port COM18 --device-id 5 --nanolib-path D:/Software/4dmag --prefix FDM:ROTATOR:'
+  steppers:      # Arduino AccelStepper: HHG lens, pump ND wheel, HHG iris
+    ioc_script: arduino_stepper_ioc
+    enabled: true
+    args: '--port COM28 --baud 9600 --axes Lens:mm:1,ND:deg:1,Iris:a.u.:1 --limit-switches 0,1,1 --max-speed 600 --accel 800 --min-pulse-width 200 --prefix FDM:STEPPERS:'
+  interlock:     # Arduino laser intensity interlock (resets the Pharos interlock)
+    ioc_script: arduino_interlock_ioc
+    enabled: true
+    args: '--port COM16 --baud 57600 --prefix FDM:INTERLOCK:'
+  env:           # Arduino BME680 temperature / humidity
+    ioc_script: arduino_bme680_ioc
+    enabled: true
+    args: '--port COM10 --baud 57600 --prefix FDM:ENV:'
+  flow:          # Voegtlin red-y gas flow (HHG gas cell)
+    ioc_script: voegtlin_ioc
+    enabled: true
+    args: '--port COM27 --address 247 --prefix FDM:FLOW:'
+  pharos:        # Light Conversion Pharos (REST; not in devices.py - enable when wanted)
+    ioc_script: pharos_ioc
+    enabled: false
+    args: '--host 192.168.2.10 --port 20022 --prefix FDM:PHAROS:'
+  magnet:        # DSC magnet PSU (commented out in devices.py) - set --max-current before enabling
+    ioc_script: dsc_psu_ioc
+    enabled: false
+    args: '--port COM15 --baud 9600 --max-current 40 --prefix FDM:MAGNET:'
+  itc:           # Oxford ITC503 (cryostat, commented out in devices.py)
+    ioc_script: itc503_ioc
+    enabled: false
+    args: '--gpib ASRL23::INSTR --prefix FDM:ITC:'
+  vac:        # Pfeiffer TPG366 gauges - port unknown
+    ioc_script: pfeiffer_tpg366_ioc
+    enabled: false
+    args: '--port COM1 --prefix FDM:VAC:'
+known_types: [arduino_bme680_ioc, arduino_interlock_ioc, arduino_shutter_ioc, arduino_stepper_ioc, ametek_lockin_ioc,
+              carbide_ioc, coherent_sdg_ioc, directory_ioc, dsc_psu_ioc, ips120_ioc, itc503_ioc, keithley_ioc,
+              lakeshore336_ioc, mercury_itc_ioc, mfli_ioc, nanotec_ioc, ni_daq_ioc, pfeiffer_tpg366_ioc, pharos_ioc,
+              rpi_mux_ioc, si_camera_ioc, sim_camera_ioc, sr830_ioc, thorlabs_apt_ioc, tsi_camera_ioc, voegtlin_ioc,
+              xeryon_ioc]
+restart:
+  backoff_initial_s: 2.0
+  backoff_max_s: 60.0
+  backoff_reset_after_s: 120.0
+python_executable: null

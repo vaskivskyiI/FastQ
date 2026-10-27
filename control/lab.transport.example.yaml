@@ -1,0 +1,37 @@
+# Example lab file: transport setup. On the control host the live file is control/lab.yaml (not in git) -
+# start_control_host.bat creates it from an example on first start. All keys: control/lab.example.yaml.
+# Addresses, device ids and accounts here are placeholders (public repository); real ones go in the PC's own
+# file or a private examples folder (tools/local_config.py: FASTQ_CONFIG_EXAMPLES).
+# Lab configuration for the Bluesky control session (queue server / interactive).
+# Devices are discovered from the directory IOC; only roles are chosen here.
+directory: "FASTQ:DIR:"
+roles:                      # device names = last part of the PV prefix, lower case
+  temperature: itc2         # FASTQ:ITC2: (GPIB0::24); use itc1 for FASTQ:ITC1:
+  lockin: mfli1
+  laser: laser1
+  keithley: keithley1
+data:
+  tiled_uri: http://127.0.0.1:8000          # data server on the control host
+  backup_dir: D:/Data/fastq/jsonl
+metadata:
+  facility: FastQ
+  sample: sample-001
+elog:                        # experiment notebook + device logbooks (PSI ELOG); remove url to disable
+  url: https://elog.example.org/  # server (subdir included, no logbook name)
+  user: daq                  # ELOG account of the DAQ; password: env FASTQ_ELOG_PASSWORD or <data>/elog/password.txt
+  default_experiment: exp001  # notebook used until another is chosen in the dashboard
+  device_logbooks: {}        # {laser1: Carbide, mfli1: MFLI, ...}: device events posted there
+  author: FastQ DAQ
+  # attributes of the logbooks: entry field -> ELOG attribute name (delete a line if a logbook lacks it)
+  attributes: {run: RunN, sample: Sample, file: File, category: Category, subject: Subject,
+               author: Author, status: Status, plan: Plan}
+  # Category of automatic entries - one of the logbook's Category options (the others come from ELOG)
+  auto_categories: {run: Routine entry, device_event: Other}
+derived:                       # derived values of the experiment (fastq.derived; edit on the dashboard Devices > derived)
+  prefix: "FASTQ:DERIVED:"     # live values IOC, started by start_control_host
+  values:                      # seed of <data>/derived.json (two-terminal setup)
+    - {name: RSample, units: Ohm, expr: "x / ((amp / sqrt(2) - x) / series_r)",
+       inputs: {x: mfli1.x, amp: mfli1.amplitude}, constants: {series_r: 6.7e6},
+       doc: "two-terminal: lock-in X (RMS) across the sample, excitation (peak) through series_r"}
+history: {default: {period_s: 10, raw_days: 7, keep_days: 365}}   # fastq.history; per device on the dashboard
+# security: {pin_sha256: ...}  # PIN of protected controls: python -m fastq.security <PIN> prints this line

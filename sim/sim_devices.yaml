@@ -1,0 +1,34 @@
+# Device list for the simulated stack (read by sim_stack.py and by the
+# simulated directory IOC TEST:DIR:). Same format as ioc_host/hosts/*.example.yaml.
+devices:
+  itc1:   {ioc_script: itc503_ioc,   enabled: true, args: '--mock --mock-time-scale 60 --mock-start-k 10 --prefix TEST:ITC1:'}
+  mfli1:     {ioc_script: mfli_ioc,     enabled: true, args: '--mock --device sim --demod-index 1 --prefix TEST:MFLI1:'}
+  laser1:  {ioc_script: carbide_ioc,  enabled: true, args: '--host 127.0.0.1 --port 20099 --prefix TEST:LASER1:'}
+  keithley1: {ioc_script: keithley_ioc, enabled: true, args: '--mock --prefix TEST:KEITHLEY1:'}
+  flow1:     {ioc_script: voegtlin_ioc, enabled: true, args: '--mock --prefix TEST:FLOW1:'}
+  # 4dmag-like setup (declarative instruments, ioc_host/common/devkit.py)
+  cammain: {ioc_script: sim_camera_ioc,      enabled: true, args: '--prefix TEST:CAMMAIN: --data-root sim/data/detectors'}
+  camref:  {ioc_script: sim_camera_ioc,      enabled: true, args: '--prefix TEST:CAMREF: --data-root sim/data/detectors'}
+  pump:     {ioc_script: arduino_shutter_ioc, enabled: true, args: '--mock --prefix TEST:PUMP:'}
+  delay:    {ioc_script: thorlabs_apt_ioc,    enabled: true, args: '--mock --unit ps --t0 50 --prefix TEST:DELAY:'}
+  waveplate:       {ioc_script: thorlabs_apt_ioc,    enabled: true, args: '--mock --unit deg --prefix TEST:WAVEPLATE:'}
+  # more 4dmag instruments (simulated drivers)
+  rotator:   {ioc_script: nanotec_ioc,           enabled: true, args: '--mock --prefix TEST:ROTATOR:'}
+  steppers:  {ioc_script: arduino_stepper_ioc,   enabled: true, args: '--mock --axes Lens:mm,ND:deg,Iris:a.u. --limit-switches 0,1,1 --prefix TEST:STEPPERS:'}
+  interlock: {ioc_script: arduino_interlock_ioc, enabled: true, args: '--mock --prefix TEST:INTERLOCK:'}
+  env:       {ioc_script: arduino_bme680_ioc,    enabled: true, args: '--mock --prefix TEST:ENV:'}
+  xeryon:    {ioc_script: xeryon_ioc,            enabled: true, args: '--mock --axes X:XLS_312:mm:GasCell,Y:XLS_312:mm:Toroid,Z:XRTU_30_109:deg:Wheel --prefix TEST:XERYON:'}
+  magnet:    {ioc_script: dsc_psu_ioc,           enabled: true, args: '--mock --prefix TEST:MAGNET:'}
+  ips:       {ioc_script: ips120_ioc,            enabled: true, args: '--mock --prefix TEST:IPS:'}
+  sicam:    {ioc_script: si_camera_ioc,         enabled: true, args: '--mock --prefix TEST:SICAM: --data-root sim/data/detectors'}
+  tsicam:   {ioc_script: tsi_camera_ioc,        enabled: true, args: '--mock --prefix TEST:TSICAM: --data-root sim/data/detectors'}
+  pharos:    {ioc_script: pharos_ioc,            enabled: true, args: '--mock --prefix TEST:PHAROS:'}
+  sdg:       {ioc_script: coherent_sdg_ioc,      enabled: true, args: '--mock --prefix TEST:SDG:'}
+  daq:       {ioc_script: ni_daq_ioc,            enabled: true, args: '--mock --ao-channels Dev1/ao0,Dev1/ao1 --prefix TEST:DAQ:'}
+  lockin:    {ioc_script: ametek_lockin_ioc,     enabled: true, args: '--mock --prefix TEST:LOCKIN:'}
+  vac:    {ioc_script: pfeiffer_tpg366_ioc,   enabled: true, args: '--mock --prefix TEST:VAC:'}
+  # transport instruments (simulated drivers)
+  mercury1:   {ioc_script: mercury_itc_ioc,  enabled: true, args: '--mock --tolerance 0.2 --settle-s 2 --prefix TEST:MERCURY1:'}
+  ls336:     {ioc_script: lakeshore336_ioc, enabled: true, args: '--mock --tolerance 0.1 --settle-s 2 --prefix TEST:LS336:'}
+  sr830:     {ioc_script: sr830_ioc,        enabled: true, args: '--mock --prefix TEST:SR830:'}
+  rpi1:       {ioc_script: rpi_mux_ioc,      enabled: true, args: '--mock --pin vcc=4 --pin ccm=17 --pin ntron=27 --pin protection=22 --pin se_plus=23 --pin se_minus=24 --ccm-pins 5,6,13 --ntron-pins 20,21 --prefix TEST:RPI1:'}

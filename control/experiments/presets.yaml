@@ -1,0 +1,106 @@
+# Recipes = plans with fixed parameters, offered in the dashboard's plan list ("Recipes") and in each
+# plan's preset menu. {plan: {preset name: {kwargs: {...}, comment: "...", setup: "..."}}}
+# Devices are role references ("@temperature") or left out (each plan's device parameters default to
+# the lab roles). Users' own presets (<data>/presets.json) are listed next to these; project recipes
+# that must not be public go in a private experiments folder's presets.yaml (README "Measurements").
+nd_scan:
+  Temperature log (1 s):
+    setup: general
+    comment: temperature controller every second until Stop
+    kwargs: {axes: [{repeat: 0}], readables: ["@temperature"], period_s: 1.0}
+  Lock-in log (0.5 s):
+    setup: transport
+    comment: lock-in X/Y (+ derived values) and temperature every 0.5 s until Stop
+    kwargs: {axes: [{repeat: 0}], readables: ["@lockin", "@temperature"], period_s: 0.5}
+  Lock-in frequency sweep 10 Hz - 10 kHz:
+    setup: transport
+    comment: X/Y vs reference frequency (contacts, capacitive pick-up, choosing the frequency), 2 s per point
+    kwargs: {axes: [{device: "@lockin", signal: frequency, settle_s: 2.0,
+                     values: [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000]}],
+             readables: ["@lockin", "@temperature"]}
+  Lock-in amplitude sweep (linearity):
+    setup: transport
+    comment: X/Y vs excitation amplitude 10 mV - 1 V - a linear sample gives a constant derived resistance
+    kwargs: {axes: [{device: "@lockin", signal: amplitude, settle_s: 2.0,
+                     values: [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0]}],
+             readables: ["@lockin", "@temperature"]}
+  Lock-in noise (100 x 0.1 s):
+    setup: transport
+    comment: 100 readings 0.1 s apart at fixed conditions - the spread is the noise of the setup
+    kwargs: {axes: [{repeat: 100}], readables: ["@lockin"], period_s: 0.1}
+  R(T) steps 300 -> 10 K (lock-in):
+    setup: transport
+    comment: settle 2 min within 0.1 K at every 10 K step, then 20 lock-in readings
+    kwargs: {axes: [{device: "@temperature", start: 300, stop: 10, step: 10, tolerance: 0.1, settle_s: 120,
+                     timeout_s: 3600}, {repeat: 20}],
+             readables: ["@lockin"], period_s: 0.2}
+rt_sweep:
+  R(T) cool-down 300 -> 4 K at 2 K/min (lock-in):
+    setup: transport
+    comment: continuous lock-in R(T), 1 uA through the series resistor
+    kwargs: {detectors: ["@lockin"], start_k: 300.0, final_k: 4.0, rate_k_per_min: 2.0, current_a: 1.0e-6,
+             period_s: 1.0}
+  Thermal cycle 4 -> 300 -> 4 K (lock-in):
+    setup: transport
+    comment: warm up and cool down again at 2 K/min - hysteresis of R(T)
+    kwargs: {detectors: ["@lockin"], current_a: 1.0e-6, period_s: 1.0, segments: [[4, 300, 2.0], [300, 4, 2.0]]}
+tm_rt_continuous:
+  Keithley R(T) 300 -> 10 K at 1 K/min:
+    setup: transport
+    comment: Keithley delta (mean of 10) back to back during the ramp
+    kwargs: {start_k: 300.0, final_k: 10.0, rate_k_per_min: 1.0, current_a: 1.0e-6, count: 10, delay_s: 0.02}
+tm_rt_steps:
+  R(T) steps 300 -> 10 K (Keithley delta):
+    setup: transport
+    comment: 10 K steps, 60 s within 0.1 K, delta mean of 10 at 1 uA
+    kwargs: {table_k: [[300, 10, 10]], tolerance_k: 0.1, settle_s: 60.0, current_a: 1.0e-6, count: 10}
+iv_curves:
+  TransportMeasure DC sweep:
+    setup: transport
+    comment: linear 0 -> +I -> -I -> 0, 50 points per quadrant
+    kwargs: {max_current_a: 1.0e-3, points_per_quadrant: 50, spacing_exponent: 1.0, compliance_v: 10.0,
+             first_settle_s: 0.5, point_settle_s: 0.0}
+  I-V +-100 uA at 4, 10, 50, 300 K:
+    setup: transport
+    comment: dense near zero ((i/n)^2 spacing), 100 points per quadrant, at each temperature after 60 s settling
+    kwargs: {max_current_a: 1.0e-4, points_per_quadrant: 100, spacing_exponent: 2.0, compliance_v: 10.0,
+             temperatures_k: [4, 10, 50, 300], settle_s: 60.0}
+log_until:
+  Cool-down curve until 4.5 K:
+    setup: general
+    comment: temperature (+ lock-in) every 10 s until below 4.5 K for 5 min, then the queue continues
+    kwargs: {signal: "@temperature", below: 4.5, for_s: 300, readables: ["@lockin"], period_s: 10.0,
+             timeout_s: 172800}
+  Warm-up curve until 290 K:
+    setup: general
+    comment: temperature every 30 s until above 290 K (e.g. before venting)
+    kwargs: {signal: "@temperature", above: 290.0, readables: [], period_s: 30.0, timeout_s: 259200}
+wait_for:
+  Temperature stable (role, 10 min):
+    setup: general
+    comment: the next queue item starts when the temperature has been within +-0.05 K of 4.2 K for 10 min
+    kwargs: {signal: "@temperature", within: [4.2, 0.05], for_s: 600, timeout_s: 21600}
+wait_until:
+  Tonight 22:00:
+    setup: general
+    comment: the next queue item starts at 22:00
+    kwargs: {time_hhmm: "22:00"}
+sequence:
+  Night - R(T) steps then delta log, repeated:
+    setup: transport
+    comment: example of a repeating sequence - edit the steps
+    kwargs:
+      repeats: 3
+      steps:
+        - {plan: tm_rt_steps, kwargs: {temperatures_k: [10, 8, 6], settle_s: 300}, comment: cooling steps}
+        - {plan: tm_delta, kwargs: {points: 50}, comment: delta at the base temperature}
+  Cool down, then R(T) on warming:
+    setup: transport
+    comment: log the cool-down until 4.5 K, wait 30 min stable, then continuous lock-in R(T) up to 300 K
+    kwargs:
+      steps:
+        - {plan: log_until, kwargs: {signal: "@temperature", below: 4.5, for_s: 300, readables: ["@lockin"]},
+           comment: cool-down}
+        - {plan: wait_for, kwargs: {signal: "@temperature", within: [4.2, 0.1], for_s: 1800}}
+        - {plan: rt_sweep, kwargs: {detectors: ["@lockin"], start_k: 4.2, final_k: 300.0, rate_k_per_min: 1.0,
+                                    go_to_start: false}, comment: R(T) warming}

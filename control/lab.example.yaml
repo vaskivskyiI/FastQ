@@ -1,0 +1,74 @@
+# Reference of every lab-file key. This PC's lab file is control/lab.yaml (not in git; start_control_host.bat
+# makes it from an example: this one, lab.transport.example.yaml, lab.4dmag.example.yaml). Simulator: lab_sim.yaml.
+# Addresses, device ids and accounts here are placeholders (public repository); real ones go in the PC's own
+# file or a private examples folder (tools/local_config.py: FASTQ_CONFIG_EXAMPLES).
+# Select a lab file with FASTQ_LAB=<file> or start_control_host.py --lab <file>.
+
+directory: "FASTQ:DIR:"            # device directory IOC prefix(es), comma-separated; env FASTQ_DIRECTORY wins
+
+roles:                             # which device plays which part in the plans (device name = last part of
+  temperature: itc1                # the PV prefix, lower case). Interfaces: control/fastq/roles.py - the
+  lockin: mfli1                    # session warns when a device cannot do what plans of its role need
+  laser: laser1
+  keithley: keithley1
+  # 4DMAG: main_camera, ref_camera, pulser, delay, waveplate, rotator, nd, gas, environment, interlock, magnet
+
+data:
+  backup_dir: D:/Data/fastq/jsonl  # REQUIRED. Raw JSONL per run; its parent is <data>: Tiled catalog (tiled/),
+                                   # code archive (code/), ELOG outbox (elog/), history/, views.json, derived.json
+  tiled_uri: http://127.0.0.1:8000 # data server (API key: env FASTQ_TILED_API_KEY or <data>/tiled/api_key.txt)
+  flush_s: 2                       # live writing to Tiled: flush period
+  readable_storage: [D:/Data/fastq/detectors]   # camera HDF5 folders Tiled may read (= camera --data-root)
+
+metadata: {facility: Transport, sample: unknown}   # added to every run; sample = default of the top bar
+
+plans:
+  exclude: []                      # plan names from control/experiments not offered
+
+queue:
+  redis_port: 6379                 # fakeredis of the queue server (6380 if 6379 is taken)
+
+ai:                                # MCP server for AI assistants (fastq/mcp_server.py)
+  mcp_port: 8089                   # omit: no network MCP server (stdio clients start their own)
+  host: 127.0.0.1
+  access: read                     # read | queue | control (protected controls are never writable by AI)
+
+elog:                              # optional (fastq/elog.py)
+  url: https://elog.example.org/
+  user: daq                        # password: env FASTQ_ELOG_PASSWORD or password_file (default <data>/elog/password.txt)
+  password_file: null
+  default_experiment: 4d001        # notebook until one is chosen in the top bar
+  notebook_pattern: "^4d"          # which logbooks the notebook selector offers
+  notebook_groups: ["4DMAG Experiments"]
+  author: FastQ DAQ
+  device_logbooks: {laser1: Carbide}   # device events (connection, IOC restart, LastError, ...) go there
+  device_events: true
+  attributes: {run: RunN, sample: Sample, file: File, category: Category, subject: Subject,
+               author: Author, status: Status, plan: Plan}
+  auto_categories: {run: Routine entry, device_event: Other}
+
+suspenders:                        # hold a running scan while a condition holds (fastq/suspenders.py)
+  - {signal: interlock.triggered, when: true, resume_after_s: 10, why: laser interlock tripped}
+  - {signal: vac.pressure1, above: 1.0e-4, why: vacuum}
+
+derived:                           # derived values of the experiment (fastq/derived.py)
+  prefix: "FASTQ:DERIVED:"         # live-values IOC on the control host (started by start_control_host)
+  values:                          # seed of <data>/derived.json (then edited on the dashboard)
+    - {name: RSample, units: Ohm, expr: "x / ((amp / sqrt(2) - x) / series_r)",
+       inputs: {x: mfli1.x, amp: mfli1.amplitude}, constants: {series_r: 6.7e6},
+       doc: "two-terminal: lock-in X (RMS) across the sample, excitation (peak) through series_r"}
+
+history:                           # value history of every device (fastq/history.py); also editable on the dashboard
+  default: {period_s: 10, raw_days: 7, keep_days: 365}
+  devices: {itc1: {period_s: 1, raw_days: 30}}
+
+security:                          # protected controls (fastq/security.py)
+  pin_sha256: null                 # python -m fastq.security <PIN> prints this line; env FASTQ_CONTROL_PIN_SHA256 wins
+  overrides: {"laser1.ShutterOpen": protected}   # "<device>.<PV name>": safe | confirm | protected
+
+backup: {target: '\\nas\fastq\transport', every_h: 6, keep: 14}   # fastq.backup: copies of <data>
+
+alarms:                            # fastq.alarms: rules on device values (then edited on the System page)
+  - {name: Cryostat drift, ref: itc1.temp, rate_per_min: 0.5, for_s: 120, actions: [notify, elog],
+     note: "temperature changes although no ramp is running"}
+  - {name: Vacuum, ref: vac.pressure1, above: 1.0e-4, for_s: 30, actions: [notify, elog]}

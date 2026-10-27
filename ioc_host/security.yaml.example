@@ -1,0 +1,49 @@
+# Per-PV access control for this stack's IOCs. See common/access_control.py
+# for exactly how this is enforced (caproto's native check_access() hook)
+# and its real limits (hostname/username are asserted by the client, not
+# authenticated - this stops accidents and unauthorized software, not a
+# determined attacker on your network).
+#
+# To use: copy this file to "security.yaml" (same folder) and edit it - each
+# IOC looks for security.yaml next to it by default (--security-config to
+# point elsewhere). A missing security.yaml means no restrictions at all,
+# so nothing breaks if you don't set this up.
+#
+# `pattern` matches a PV's FULL name (prefix + suffix), shell-glob style:
+#   "FASTQ:LASER1:ShutterOpenSet"  matches only that one PV
+#   "FASTQ:LASER1:*"            matches every PV served by the laser IOC
+# The first matching rule wins. A PV matching nothing falls back to
+# default_read_hosts / default_write_hosts below.
+#
+# Hostnames are compared case-insensitively; "*" means "anyone". Find out
+# what hostname a given machine will actually present by trying a write
+# from it and checking the IOC's log - a rejected attempt logs the
+# host/user string it saw, so you don't have to guess.
+
+default_read_hosts: ["*"]     # anyone can read PVs with no rule below
+default_write_hosts: ["*"]    # anyone can write PVs with no rule below
+
+rules:
+  # Example: only "control-pc" may open/close the laser shutter or touch
+  # anything else on the laser - the actual safety-relevant case this was
+  # built for. Replace "control-pc" with your real control machine's
+  # hostname (as camonitor/the IOC log shows it).
+  - pattern: "FASTQ:LASER1:*"
+    write_hosts: ["control-pc"]
+    # read_hosts omitted -> stays at default_read_hosts ("*" = anyone can watch it)
+
+  # Example of also restricting READS, not just writes - e.g. if a
+  # measurement is meant to stay visible only to machines actually running
+  # the experiment:
+  # - pattern: "FASTQ:KEITHLEY1:*"
+  #   read_hosts: ["control-pc", "monitor-pc"]
+  #   write_hosts: ["control-pc"]
+
+  # More specific patterns can override a broader one listed after them -
+  # remember the FIRST match wins, so put narrower rules first if a PV
+  # needs different treatment than the rest of its IOC:
+  # - pattern: "FASTQ:ITC1:Temp"
+  #   write_hosts: []            # nobody can write - it's read-only anyway,
+  #                               # but this blocks it explicitly regardless
+  # - pattern: "FASTQ:ITC1:*"
+  #   write_hosts: ["control-pc", "backup-control-pc"]

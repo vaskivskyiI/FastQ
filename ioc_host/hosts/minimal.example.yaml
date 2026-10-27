@@ -1,0 +1,23 @@
+# Example IOC host file for a new PC: only the directory IOC. Add the instruments here or in the
+# supervisor GUI (format: ioc_host/supervisor/config.py; one entry per instrument, key = device name).
+# Live file: ioc_host/supervisor_config.yaml (not in git), created from an example on first start.
+# Addresses, device ids and accounts here are placeholders (public repository); real ones go in the PC's own
+# file or a private examples folder (tools/local_config.py: FASTQ_CONFIG_EXAMPLES).
+devices:
+  directory_ioc:
+    ioc_script: directory_ioc
+    enabled: true
+    args: '--prefix FASTQ:DIR:'          # several IOC host PCs: one directory each (FASTQ:DIR:<PC>:)
+  # itc1:
+  #   ioc_script: itc503_ioc
+  #   enabled: true
+  #   args: '--gpib GPIB0::23::INSTR --prefix FASTQ:ITC1:'
+  # mfli1:
+  #   ioc_script: mfli_ioc
+  #   enabled: true
+  #   args: '--device dev1234 --labone-host 192.168.1.94 --labone-port 8004 --demod-index 1 --prefix FASTQ:MFLI1:'
+restart:
+  backoff_initial_s: 2.0
+  backoff_max_s: 60.0
+  backoff_reset_after_s: 120.0
+python_executable: null

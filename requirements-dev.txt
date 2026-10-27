@@ -1,0 +1,4 @@
+# DEVELOPMENT / CI: everything the tests import (tests/test_*.py, tests/run_sim_plans.py, sim/).
+-r requirements-ioc-host.txt
+-r requirements-control.txt
+pytest>=8

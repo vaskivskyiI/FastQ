@@ -1,0 +1,29 @@
+# FastQ IOC host: the headless IOC supervisor (ioc_host/supervisor/headless.py) for one host file.
+# Installed by deploy/systemd/install.sh, which fills in the @...@ fields:
+#   sudo deploy/systemd/install.sh ioc-host ioc_host/hosts/<host>.yaml
+#   systemctl status fastq-ioc-host ; journalctl -u fastq-ioc-host -f
+#   the IOCs' own output: /var/log/fastq/@NAME@/<device>.log
+[Unit]
+Description=FastQ IOC host (@NAME@)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+# serial adapters (Arduino, Voegtlin, Xeryon, ...) belong to dialout
+SupplementaryGroups=dialout
+WorkingDirectory=@REPO@
+# EPICS_CA_ADDR_LIST=... and other site settings
+EnvironmentFile=-/etc/fastq/fastq.env
+ExecStart=@VENV@/bin/python -u @REPO@/ioc_host/supervisor/headless.py --config @CONFIG@ --log-dir /var/log/fastq/@NAME@
+LogsDirectory=fastq/@NAME@
+# SIGTERM to the supervisor only: it stops its IOCs itself (5 s each at most); whatever is still
+# alive after TimeoutStopSec is killed with the whole control group
+KillMode=mixed
+TimeoutStopSec=120
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

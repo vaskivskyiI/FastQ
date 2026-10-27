@@ -1,0 +1,46 @@
+# Example lab file: 4DMAG. On the control host the live file is control/lab.yaml (not in git) -
+# start_control_host.bat creates it from an example on first start. All keys: control/lab.example.yaml.
+# Addresses, device ids and accounts here are placeholders (public repository); real ones go in the PC's own
+# file or a private examples folder (tools/local_config.py: FASTQ_CONFIG_EXAMPLES).
+# 4DMAG setup (HHG pump-probe). Control host: the 4DMAG PC. IOC hosts: ioc_host/hosts/4dmag.example.yaml
+# (+ more PCs later, each with its own directory FDM:DIR:<HOST>: listed as peers).
+directory: "FDM:DIR:"
+roles:                          # device names = last part of the PV prefix, lower case
+  main_camera: cammain          # FDM:CAMMAIN:  SI CCD, main spectrometer
+  ref_camera: camref            # FDM:CAMREF:   SI CCD, reference spectrometer
+  pulser: pump                  # FDM:PUMP:     Arduino pump shutter + camera trigger
+  delay: delay                  # FDM:DELAY:    Thorlabs APT delay line (ps)
+  waveplate: waveplate          # FDM:WAVEPLATE: Thorlabs APT rotation mount (deg)
+  rotator: rotator              # FDM:ROTATOR:  Nanotec (detector rotation)
+  nd: steppers                  # FDM:STEPPERS: Arduino steppers (HHG lens, pump ND, iris)
+  gas: flow                     # FDM:FLOW:     Voegtlin red-y gas flow
+  environment: env              # FDM:ENV:      BME680 temperature / humidity
+  interlock: interlock          # FDM:INTERLOCK: laser intensity interlock
+  # magnet: magnet              # FDM:MAGNET:   DSC power supply (when mounted)
+  # temperature: itc            # FDM:ITC:      ITC503 (when the cryostat is used)
+data:
+  tiled_uri: http://127.0.0.1:8000
+  backup_dir: 'D:\Data\FastQ\jsonl'     # + tiled catalog, code archive, ELOG outbox next to it
+  flush_s: 2
+  readable_storage: ['D:\Data\FastQ\detectors']   # = --data-root of the camera IOCs (a share once they move)
+metadata:
+  facility: 4DMAG
+  setup: 4dmag
+elog:
+  url: https://elog.example.org/
+  user: daq                             # password: env FASTQ_ELOG_PASSWORD or <data>/elog/password.txt
+  default_experiment: 4d003
+  notebook_groups: ["4DMAG Experiments"]   # the dashboard offers only these notebooks (4dXXX)
+  device_logbooks: {pump: 4dmag, delay: 4dmag, waveplate: 4dmag, rotator: 4dmag, cammain: 4dmag, camref: 4dmag,
+                    interlock: 4dmag, flow: 4dmag, steppers: 4dmag}   # instrument logbook
+  author: daq
+  # the 4dXXX logbooks have: Author, Category, File, Subject, Sample, RunN
+  attributes: {run: RunN, sample: Sample, file: File, category: Category, subject: Subject, author: Author}
+  auto_categories: {run: DAQ, device_event: Problem}
+ai: {mcp_port: 8089, access: read}      # AI assistants: read | queue | control (fastq/mcp_server.py)
+suspenders:                             # pause runs while a condition holds (fastq/suspenders.py)
+  - {signal: interlock.triggered, when: true, resume_after_s: 10, why: laser intensity interlock tripped}
+  # - {signal: flow.flow, below: 0.05, resume_after_s: 30, why: no HHG gas flow}
+derived: {prefix: "FDM:DERIVED:", values: []}   # derived values (fastq.derived), edited on the dashboard
+history: {default: {period_s: 10, raw_days: 7, keep_days: 365}}
+# security: {pin_sha256: ...}  # PIN of protected controls: python -m fastq.security <PIN> prints this line

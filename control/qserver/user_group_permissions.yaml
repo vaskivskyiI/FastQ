@@ -1,0 +1,13 @@
+# Queue server permissions (bluesky-queueserver format: null = allow all,
+# regular expressions start with ':'). "primary" = normal users.
+user_groups:
+  root:
+    allowed_plans: [null]
+    forbidden_plans: [null]
+    allowed_devices: [null]
+    forbidden_devices: [null]
+  primary:
+    allowed_plans: [null]
+    forbidden_plans: [":^_"]          # names starting with _ are private helpers
+    allowed_devices: [null]
+    forbidden_devices: [":^_:?.*"]

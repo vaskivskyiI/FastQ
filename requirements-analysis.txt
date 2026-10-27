@@ -1,0 +1,10 @@
+# ANALYSIS (notebooks/): install into the control venv on top of requirements-control.txt
+#   pip install -r requirements-control.txt -r requirements-analysis.txt
+jupyterlab>=4.0
+ipykernel>=6.0
+matplotlib>=3.8
+scipy>=1.11            # curve fits (exponential decay, ...)
+h5py>=3.10             # HDF5 export / reading it back
+httpx>=0.27            # dashboard API (device history)
+nbformat>=5.9          # build / check the notebooks programmatically
+nbclient>=0.10         # run them headless: python -m nbclient ... or jupyter execute

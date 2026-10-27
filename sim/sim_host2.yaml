@@ -1,0 +1,8 @@
+# A second simulated IOC host (camera PC of a split 4dmag): its own directory TEST:DIR:H2:
+# peered with TEST:DIR: - clients still need only one directory name.
+#   python sim/sim_stack.py --devices sim/sim_host2.yaml --directory TEST:DIR:H2: --peers TEST:DIR: --no-carbide
+devices:
+  cam2main: {ioc_script: sim_camera_ioc,      enabled: true, args: '--prefix TEST:CAM2MAIN: --data-root sim/data/detectors'}
+  cam2ref:  {ioc_script: sim_camera_ioc,      enabled: true, args: '--prefix TEST:CAM2REF: --data-root sim/data/detectors'}
+  pump2:    {ioc_script: arduino_shutter_ioc, enabled: true, args: '--mock --prefix TEST:PUMP2:'}
+  delay2:   {ioc_script: thorlabs_apt_ioc,    enabled: true, args: '--mock --unit ps --t0 50 --prefix TEST:DELAY2:'}

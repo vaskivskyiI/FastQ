@@ -1,0 +1,39 @@
+# Lab configuration for the simulated IOC host (sim/sim_stack.py). Select with FASTQ_LAB.
+directory: "TEST:DIR:"
+roles: {temperature: itc1, lockin: mfli1, laser: laser1, keithley: keithley1,
+        # 4dmag-like part of the simulator
+        main_camera: cammain, ref_camera: camref, pulser: pump, delay: delay, waveplate: waveplate, gas: flow1,
+        rotator: rotator, nd: steppers, environment: env, interlock: interlock, magnet: magnet}
+data:
+  tiled_uri: http://127.0.0.1:8010          # 8000 is taken on the dev PC
+  backup_dir: sim/data/jsonl
+  readable_storage: [sim/data/detectors]  # camera HDF5 files (the sim cameras' --data-root)
+metadata: {facility: FastQ-sim, sample: simulated}
+elog:                                   # python sim/mock_elog_server.py --port 8091
+  url: http://127.0.0.1:8091/
+  user: daq                             # mock password: FASTQ_ELOG_PASSWORD=simpw
+  default_experiment: SimExperiment
+  device_logbooks: {laser1: SimLaser, mfli1: SimLockin, itc1: SimCryostat, keithley1: SimKeithley}
+  author: FastQ DAQ (sim)
+  # attributes of the logbooks: entry field -> ELOG attribute name (delete a line if a logbook lacks it)
+  attributes: {run: RunN, sample: Sample, file: File, category: Category, subject: Subject,
+               author: Author, status: Status, plan: Plan}
+  # Category of automatic entries - one of the logbook's Category options (the others come from ELOG)
+  auto_categories: {run: Routine entry, device_event: Other}
+ai: {mcp_port: 8089, access: queue}      # MCP server for AI assistants (fastq/mcp_server.py)
+queue: {redis_port: 6380}                # 6379 is taken on some dev PCs (WSL Redis)
+suspenders:                             # pause runs while a condition holds (fastq/suspenders.py)
+  - {signal: interlock.triggered, when: true, resume_after_s: 3, why: laser interlock tripped}
+derived:                                # experiment-specific derived values (fastq.derived; edit on the dashboard)
+  prefix: "TEST:DERIVED:"               # live values IOC, started by start_control_host
+  values:                               # seed of <data>/derived.json
+    - {name: RSample, units: Ohm, expr: "x / ((amp / sqrt(2) - x) / series_r)",
+       inputs: {x: mfli1.x, amp: mfli1.amplitude}, constants: {series_r: 6.7e6},
+       doc: "two-terminal: lock-in X (RMS) across the sample, excitation (peak) through series_r"}
+history: {default: {period_s: 5, raw_days: 7, keep_days: 365}}   # fastq.history, per device on the dashboard
+security:                               # protected controls need this PIN (sim: 1234; python -m fastq.security <PIN>)
+  pin_sha256: 5a7c7dbf592908b5b64648fd2b8c3f8eee1a3307774cd55800ec0a51082c8e5e
+  overrides: {"laser1.ShutterOpen": protected}   # lab overrides of IOC safety levels (device.PV name)
+backup: {target: sim/backup, every_h: 24, keep: 3}   # fastq.backup (real labs: a NAS share)
+alarms:                                 # fastq.alarms seeds (then edited on the System page)
+  - {name: Cryostat too warm, ref: itc1.temp, above: 30, for_s: 60, actions: [notify], note: check the heater and gas}

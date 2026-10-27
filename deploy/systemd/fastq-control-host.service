@@ -1,0 +1,26 @@
+# FastQ control host: control/start_control_host.py (Redis, Tiled, queue server, dashboards, ELOG, MCP).
+# Installed by deploy/systemd/install.sh, which fills in the @...@ fields:
+#   sudo deploy/systemd/install.sh control-host control/lab.yaml
+#   systemctl status fastq-control-host ; journalctl -u fastq-control-host -f   (services' logs: <data>/tiled/*.log)
+[Unit]
+Description=FastQ control host (@NAME@)
+Wants=network-online.target
+After=network-online.target fastq-ioc-host.service
+
+[Service]
+Type=simple
+User=@USER@
+WorkingDirectory=@REPO@
+# FASTQ_TILED_API_KEY, FASTQ_AI_USER / FASTQ_AI_PASSWORD, FASTQ_ELOG_PASSWORD, EPICS_CA_ADDR_LIST, ...
+EnvironmentFile=-/etc/fastq/fastq.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=@VENV@/bin/python -u @REPO@/control/start_control_host.py --lab @CONFIG@
+# start_control_host.py stops its services in order on Ctrl-C (KeyboardInterrupt), not on SIGTERM
+KillSignal=SIGINT
+KillMode=mixed
+TimeoutStopSec=120
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target

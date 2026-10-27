@@ -1,0 +1,43 @@
+# Example IOC host file: transport setup. On the IOC host PC the live file is
+# ioc_host/supervisor_config.yaml (not in git) - start_ioc_host.bat creates it from an example on first start.
+# Addresses, device ids and accounts here are placeholders (public repository); real ones go in the PC's own
+# file or a private examples folder (tools/local_config.py: FASTQ_CONFIG_EXAMPLES).
+# The supervisor GUI rewrites the live file when devices are ticked / edited (comments are then lost).
+devices:
+  laser1:
+    ioc_script: carbide_ioc
+    enabled: true
+    args: '--host 192.168.1.10 --port 20010 --prefix FASTQ:LASER1:'
+  directory_ioc:
+    ioc_script: directory_ioc
+    enabled: true
+    args: '--prefix FASTQ:DIR:'
+  itc2:
+    ioc_script: itc503_ioc
+    enabled: true
+    args: '--gpib GPIB0::24::INSTR --prefix FASTQ:ITC2:'
+  itc1:
+    ioc_script: itc503_ioc
+    enabled: true
+    args: '--gpib GPIB0::23::INSTR --prefix FASTQ:ITC1:'
+  keithley1:
+    ioc_script: keithley_ioc
+    enabled: true
+    args: '--resource GPIB0::18::INSTR --setup-command "OUTPut:RESPonse SLOW" --setup-command
+      "OUTP:ISH OLOW" --prefix FASTQ:KEITHLEY1:'
+  mfli1:
+    ioc_script: mfli_ioc
+    enabled: true
+    args: '--device dev1234 --labone-host 192.168.1.94 --labone-port 8004 --demod-index
+      1 --prefix FASTQ:MFLI1:'
+known_types:
+- carbide_ioc
+- directory_ioc
+- itc503_ioc
+- keithley_ioc
+- mfli_ioc
+restart:
+  backoff_initial_s: 2.0
+  backoff_max_s: 60.0
+  backoff_reset_after_s: 120.0
+python_executable: null
